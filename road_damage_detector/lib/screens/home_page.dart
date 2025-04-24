@@ -2,10 +2,10 @@ import 'dart:io';
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:road_damage_detector/screens/complaint_form_screen.dart';
 import 'package:road_damage_detector/services/camera_capture_screen.dart';
 import '../models/detection_box.dart';
 import '../services/backend_service.dart';
-import '../services/camera_service.dart';
 import '../widgets/image_painter.dart';
 
 class HomePage extends StatefulWidget {
@@ -19,8 +19,9 @@ class _HomePageState extends State<HomePage> {
   List<DetectionBox> _detections = [];
   int _modelImageWidth = 640;
   int _modelImageHeight = 640;
+  String? _backendImagePath;
 
-  final classes = [
+  final List<String> classes = [
     "Longitudinal Crack",
     "Transverse Crack",
     "Alligator Crack",
@@ -43,7 +44,7 @@ class _HomePageState extends State<HomePage> {
         builder:
             (_) => CameraCaptureScreen(
               onImageCaptured: (file) {
-                Navigator.pop(context, file); // Send image back
+                Navigator.pop(context, file);
               },
             ),
       ),
@@ -71,7 +72,31 @@ class _HomePageState extends State<HomePage> {
         _detections = result['detections'];
         _modelImageWidth = result['width'];
         _modelImageHeight = result['height'];
+        _backendImagePath = result['image_path'];
+        print(
+          "Image path from backend:inside homepage on 76 $_backendImagePath",
+        );
       });
+    }
+  }
+
+  void _openComplaintForm() {
+    if (_image != null && _detections.isNotEmpty && _backendImagePath != null) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder:
+              (_) => ComplaintFormScreen(
+                image: _image!,
+                detections: _detections.map((d) => d.toJson()).toList(),
+                imagePath: _backendImagePath!,
+              ),
+        ),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("No valid image or detections to submit")),
+      );
     }
   }
 
@@ -113,6 +138,14 @@ class _HomePageState extends State<HomePage> {
                       ),
                     ),
                   ),
+                ),
+              ),
+            if (_uiImage != null)
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 12.0),
+                child: ElevatedButton(
+                  onPressed: _openComplaintForm,
+                  child: Text("Submit Complaint"),
                 ),
               ),
           ],

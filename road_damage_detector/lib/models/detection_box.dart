@@ -16,4 +16,8 @@ class DetectionBox {
       bbox: List<double>.from(json['bbox']),
     );
   }
+
+  Map<String, dynamic> toJson() {
+    return {'class_id': classId, 'confidence': confidence, 'bbox': bbox};
+  }
 }

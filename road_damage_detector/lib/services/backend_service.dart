@@ -25,6 +25,7 @@ class BackendService {
         'detections': detections,
         'width': jsonResp['image_width'],
         'height': jsonResp['image_height'],
+        'image_path': jsonResp['image_path'],
       };
     } else {
       print("Error from backend");
