@@ -3,6 +3,8 @@ import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:road_damage_detector/screens/complaint_form_screen.dart';
+import 'package:road_damage_detector/screens/login_screen.dart';
+import 'package:road_damage_detector/services/auth_service.dart';
 import 'package:road_damage_detector/services/camera_capture_screen.dart';
 import '../models/detection_box.dart';
 import '../services/backend_service.dart';
@@ -103,7 +105,21 @@ class _HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text("Road Damage Detector")),
+      appBar: AppBar(
+        title: Text("Road Damage Detector"),
+        actions: [
+          IconButton(
+            icon: Icon(Icons.exit_to_app),
+            onPressed: () async {
+              await AuthService.logout();
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(builder: (context) => LoginScreen()),
+              );
+            },
+          ),
+        ],
+      ),
       body: Padding(
         padding: const EdgeInsets.all(12.0),
         child: Column(

@@ -10,9 +10,19 @@ import datetime
 from bson import ObjectId  
 import random
 from werkzeug.security import generate_password_hash, check_password_hash
+from twilio.rest import Client
 
 app = Flask(__name__)
 CORS(app)
+from dotenv import load_dotenv
+load_dotenv()
+
+
+TWILIO_ACCOUNT_SID = os.getenv('TWILIO_ACCOUNT_SID', 'your_sid_here')
+TWILIO_AUTH_TOKEN = os.getenv('TWILIO_AUTH_TOKEN', 'your_auth_token')
+TWILIO_PHONE_NUMBER = os.getenv('TWILIO_PHONE_NUMBER', '+1234567890')
+
+twilio_client = Client(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN)
 
 model = YOLO("models/YOLOv8_Small_RDD.pt")
 client = MongoClient("mongodb://localhost:27017/road_maintainance")
@@ -119,17 +129,33 @@ def send_otp():
     if not phone or not phone.isdigit() or len(phone) != 10:
         return jsonify({"error": "Invalid phone number"}), 400
 
+    full_phone = "+91" + phone  # Add country code if you're in India
+
     otp = str(random.randint(100000, 999999))
     expiry = datetime.datetime.now() + datetime.timedelta(minutes=5)
 
+    # Store OTP in DB (your MongoDB logic)
     otps_col.update_one(
         {"phone": phone},
-        {"$set": {"otp": otp, "expires_at": expiry}},
+        {
+            "$set": {
+                "otp": otp,
+                "expires_at": expiry,
+                "verified": False  # Optionally track if it's used
+            }
+        },
         upsert=True
     )
 
-    print(f"Sending OTP {otp} to {phone}")  # Replace this with SMS integration
-    return jsonify({"message": "OTP sent"})
+    try:
+        message = twilio_client.messages.create(
+            body=f"Your OTP is {otp}. It expires in 5 minutes.",
+            from_=TWILIO_PHONE_NUMBER,
+            to=full_phone
+        )
+        return jsonify({"message": "OTP sent successfully"})
+    except Exception as e:
+        return jsonify({"error": "Failed to send OTP", "details": str(e)}), 500
 
 @app.route("/verify-otp", methods=["POST"])
 def verify_otp():
